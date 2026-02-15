@@ -99,7 +99,7 @@ export default function App() {
     if (!isDragging.current) return;
     const dx = e.clientX - lastPos.current.x;
     const dy = e.clientY - lastPos.current.y;
-    const threshold = DIFFICULTY_MAP[difficulty].size * 0.8; // Increased threshold for more deliberate movement
+    const threshold = DIFFICULTY_MAP[difficulty].size * 0.6; // Slightly more sensitive following user feedback
 
     if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
       if (Math.abs(dx) > Math.abs(dy)) {
