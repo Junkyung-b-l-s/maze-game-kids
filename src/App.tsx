@@ -129,7 +129,7 @@ export default function App() {
   };
 
   const movePlayer = (dr: number, dc: number) => {
-    if (activeQuiz) return;
+    if (gameState !== 'playing' || activeQuiz) return;
 
     const { r, c } = playerPosition;
     const nr = r + dr;
@@ -189,6 +189,7 @@ export default function App() {
     setStepCount(prev => prev + 1);
     playSound('move');
 
+    // Win Check - Check current nr/nc against goal
     if (nr === rows - 1 && nc === cols - 1) {
       setGameState('won');
       setIsTimerRunning(false);
