@@ -89,6 +89,19 @@ export default function App() {
     return () => window.removeEventListener('resize', updateCellSize);
   }, [difficulty, gameState]);
 
+  // Keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (gameState !== 'playing' || activeQuiz) return;
+      if (e.key === 'ArrowUp') movePlayer(-1, 0);
+      else if (e.key === 'ArrowDown') movePlayer(1, 0);
+      else if (e.key === 'ArrowLeft') movePlayer(0, -1);
+      else if (e.key === 'ArrowRight') movePlayer(0, 1);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameState, activeQuiz, maze, playerPosition]);
+
   // Timer
   useEffect(() => {
     let interval: any;
@@ -150,18 +163,41 @@ export default function App() {
     const nextCell = maze[nr][nc];
     const cellKey = `${nr},${nc}`;
 
+    setPlayerPosition({ r: nr, c: nc });
+    setStepCount(prev => prev + 1);
+    playSound('move');
+
+    // WIN CONDITION - Check immediately after valid move
+    if (nr === rows - 1 && nc === cols - 1) {
+      setGameState('won');
+      setIsTimerRunning(false);
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
+      playSound('win');
+      return;
+    }
+
+    // QUIZ CHECK - If it's a quiz cell, block further logic (like T-Rex) until solved
+    if (nextCell.isQuizCell && !quizSolvedRef.current.has(cellKey)) {
+      const randomQuiz = QUIZZES[Math.floor(Math.random() * QUIZZES.length)];
+      setActiveQuiz(randomQuiz);
+      return;
+    }
+
     // T-Rex Activation and Movement
-    // Use Manhattan distance or simple grid progress for a more robust trigger
     const progressFactor = (nr + nc) / (rows + cols - 2);
 
     if (!isTRexActive && progressFactor >= 0.45) { // Activate around 45% progress
       setIsTRexActive(true);
       setScreenShake(true);
       setTimeout(() => setScreenShake(false), 1000);
-      playSound('roar'); // Play the roar sound!
+      playSound('roar');
     }
 
-    if (isTRexActive && stepCount % 3 !== 0) { // Move 2 steps for every 3 player steps (Faster!)
+    if (isTRexActive && stepCount % 3 !== 0) { // Move 2 steps for every 3 player steps
       const pathForTRex = findPath(maze, tRexPosition, { r: nr, c: nc }, rows, cols);
       if (pathForTRex.length > 1) {
         const nextTRexPos = pathForTRex[1];
@@ -174,31 +210,6 @@ export default function App() {
           return;
         }
       }
-    }
-
-    if (nextCell.isQuizCell && !quizSolvedRef.current.has(cellKey)) {
-      setPlayerPosition({ r: nr, c: nc }); // Move to the quiz cell
-      setStepCount(prev => prev + 1);
-      const randomQuiz = QUIZZES[Math.floor(Math.random() * QUIZZES.length)];
-      setActiveQuiz(randomQuiz);
-      playSound('move');
-      return;
-    }
-
-    setPlayerPosition({ r: nr, c: nc });
-    setStepCount(prev => prev + 1);
-    playSound('move');
-
-    // Win Check - Check current nr/nc against goal
-    if (nr === rows - 1 && nc === cols - 1) {
-      setGameState('won');
-      setIsTimerRunning(false);
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
-      playSound('win');
     }
   };
 
@@ -373,6 +384,7 @@ export default function App() {
   const currentTarget = TARGETS[target!];
 
   const getJoinedNames = () => {
+    if (selectedCharacters.length === 0) return '우리 친구들';
     const names = selectedCharacters.map(id => CHARACTERS[id].name);
     if (names.length === 1) return withJosa(names[0], '이/가');
     const last = names.pop()!;
