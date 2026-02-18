@@ -89,18 +89,6 @@ export default function App() {
     return () => window.removeEventListener('resize', updateCellSize);
   }, [difficulty, gameState]);
 
-  // Keyboard support
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameState !== 'playing' || activeQuiz) return;
-      if (e.key === 'ArrowUp') movePlayer(-1, 0);
-      else if (e.key === 'ArrowDown') movePlayer(1, 0);
-      else if (e.key === 'ArrowLeft') movePlayer(0, -1);
-      else if (e.key === 'ArrowRight') movePlayer(0, 1);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, activeQuiz, maze, playerPosition]);
 
   // Timer
   useEffect(() => {
@@ -124,6 +112,7 @@ export default function App() {
     setStepCount(0);
     setIsTimerRunning(false);
     quizSolvedRef.current.clear();
+    setActiveQuiz(null);
   };
 
   const handleNewMaze = () => {
@@ -141,77 +130,85 @@ export default function App() {
     setActiveQuiz(null);
   };
 
-  const movePlayer = (dr: number, dc: number) => {
-    if (gameState !== 'playing' || activeQuiz) return;
-
-    const { r, c } = playerPosition;
-    const nr = r + dr;
-    const nc = c + dc;
-    const { rows, cols } = DIFFICULTY_MAP[difficulty];
-
-    if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) return;
-
-    const currentCell = maze[r][c];
-    if (dr === -1 && currentCell.walls.top) return;
-    if (dr === 1 && currentCell.walls.bottom) return;
-    if (dc === -1 && currentCell.walls.left) return;
-    if (dc === 1 && currentCell.walls.right) return;
-
-    // Start timer on first move
-    if (!isTimerRunning) setIsTimerRunning(true);
-
-    const nextCell = maze[nr][nc];
-    const cellKey = `${nr},${nc}`;
-
-    setPlayerPosition({ r: nr, c: nc });
-    setStepCount(prev => prev + 1);
-    playSound('move');
-
-    // WIN CONDITION - Check immediately after valid move
-    if (nr === rows - 1 && nc === cols - 1) {
-      setGameState('won');
-      setIsTimerRunning(false);
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
+  const movePlayer = React.useCallback((dr: number, dc: number) => {
+    setGameState(currentGameState => {
+      if (currentGameState !== 'playing') return currentGameState;
+      setActiveQuiz(currentQuiz => {
+        if (currentQuiz) return currentQuiz;
+        setPlayerPosition(prevPos => {
+          const nr = prevPos.r + dr;
+          const nc = prevPos.c + dc;
+          const { rows, cols } = DIFFICULTY_MAP[difficulty];
+          if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) return prevPos;
+          const currentCell = maze[prevPos.r][prevPos.c];
+          if (dr === -1 && currentCell.walls.top) return prevPos;
+          if (dr === 1 && currentCell.walls.bottom) return prevPos;
+          if (dc === -1 && currentCell.walls.left) return prevPos;
+          if (dc === 1 && currentCell.walls.right) return prevPos;
+          if (!isTimerRunning) setIsTimerRunning(true);
+          const nextCell = maze[nr][nc];
+          const cellKey = `${nr},${nc}`;
+          setStepCount(prevStep => {
+            const nextStep = prevStep + 1;
+            playSound('move');
+            if (nr === rows - 1 && nc === cols - 1) {
+              setGameState('won');
+              setIsTimerRunning(false);
+              confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+              playSound('win');
+              return nextStep;
+            }
+            if (nextCell.isQuizCell && !quizSolvedRef.current.has(cellKey)) {
+              const randomQuiz = QUIZZES[Math.floor(Math.random() * QUIZZES.length)];
+              setTimeout(() => setActiveQuiz(randomQuiz), 0);
+              return nextStep;
+            }
+            setIsTRexActive(currentTRexStatus => {
+              const progressFactor = (nr + nc) / (rows + cols - 2);
+              let newTRexActive = currentTRexStatus;
+              if (!currentTRexStatus && progressFactor >= 0.45) {
+                newTRexActive = true;
+                setScreenShake(true);
+                setTimeout(() => setScreenShake(false), 1000);
+                playSound('roar');
+              }
+              if (newTRexActive && nextStep % 3 !== 0) {
+                setTRexPosition(prevTRex => {
+                  const path = findPath(maze, prevTRex, { r: nr, c: nc }, rows, cols);
+                  if (path.length > 1) {
+                    const nextT = path[1];
+                    if (nextT.r === nr && nextT.c === nc) {
+                      setGameState('lost');
+                      setIsTimerRunning(false);
+                    }
+                    return nextT;
+                  }
+                  return prevTRex;
+                });
+              }
+              return newTRexActive;
+            });
+            return nextStep;
+          });
+          return { r: nr, c: nc };
+        });
+        return null;
       });
-      playSound('win');
-      return;
-    }
+      return currentGameState;
+    });
+  }, [difficulty, maze, isTimerRunning]);
 
-    // QUIZ CHECK - If it's a quiz cell, block further logic (like T-Rex) until solved
-    if (nextCell.isQuizCell && !quizSolvedRef.current.has(cellKey)) {
-      const randomQuiz = QUIZZES[Math.floor(Math.random() * QUIZZES.length)];
-      setActiveQuiz(randomQuiz);
-      return;
-    }
-
-    // T-Rex Activation and Movement
-    const progressFactor = (nr + nc) / (rows + cols - 2);
-
-    if (!isTRexActive && progressFactor >= 0.45) { // Activate around 45% progress
-      setIsTRexActive(true);
-      setScreenShake(true);
-      setTimeout(() => setScreenShake(false), 1000);
-      playSound('roar');
-    }
-
-    if (isTRexActive && stepCount % 3 !== 0) { // Move 2 steps for every 3 player steps
-      const pathForTRex = findPath(maze, tRexPosition, { r: nr, c: nc }, rows, cols);
-      if (pathForTRex.length > 1) {
-        const nextTRexPos = pathForTRex[1];
-        setTRexPosition(nextTRexPos);
-
-        // Check for collision
-        if (nextTRexPos.r === nr && nextTRexPos.c === nc) {
-          setGameState('lost');
-          setIsTimerRunning(false);
-          return;
-        }
-      }
-    }
-  };
+  // Keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowUp') movePlayer(-1, 0);
+      else if (e.key === 'ArrowDown') movePlayer(1, 0);
+      else if (e.key === 'ArrowLeft') movePlayer(0, -1);
+      else if (e.key === 'ArrowRight') movePlayer(0, 1);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [movePlayer]);
 
   const solveQuiz = (option: string) => {
     if (!activeQuiz) return;
