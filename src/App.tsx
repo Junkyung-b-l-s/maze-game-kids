@@ -158,6 +158,7 @@ export default function App() {
       setIsTRexActive(true);
       setScreenShake(true);
       setTimeout(() => setScreenShake(false), 1000);
+      playSound('roar'); // Play the roar sound!
     }
 
     if (isTRexActive && stepCount % 3 !== 0) { // Move 2 steps for every 3 player steps (Faster!)
@@ -243,7 +244,7 @@ export default function App() {
 
   // Sounds (Using Web Audio API)
   const audioCtx = useRef<AudioContext | null>(null);
-  const playSound = (type: 'move' | 'win') => {
+  const playSound = (type: 'move' | 'win' | 'roar') => {
     if (isMuted) return;
     if (!audioCtx.current) audioCtx.current = new AudioContext();
     const ctx = audioCtx.current;
@@ -256,12 +257,36 @@ export default function App() {
       osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.05);
       gain.gain.setValueAtTime(0.05, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-    } else {
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    } else if (type === 'win') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(523.25, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.5);
       gain.gain.setValueAtTime(0.05, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } else if (type === 'roar') {
+      // Synthesize a roar-like sound using low frequency and noise
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 1.2);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(400, ctx.currentTime);
+
+      osc.connect(filter);
+      filter.connect(gain);
+
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 1.2);
+      return; // Early return because we connected differently
     }
 
     osc.connect(gain);
