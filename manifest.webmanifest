@@ -1,0 +1,17 @@
+{
+    "name": "나은 도하 미로 게임",
+    "short_name": "미로게임",
+    "description": "아이들을 위한 신나는 미로 탈출 게임",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ff6b6b",
+    "icons": [
+        {
+            "src": "naeun.jpeg",
+            "sizes": "192x192 512x512",
+            "type": "image/jpeg",
+            "purpose": "any maskable"
+        }
+    ]
+}
