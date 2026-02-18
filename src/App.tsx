@@ -160,7 +160,7 @@ export default function App() {
       setTimeout(() => setScreenShake(false), 1000);
     }
 
-    if (isTRexActive && stepCount % 2 === 1) {
+    if (isTRexActive && stepCount % 3 !== 0) { // Move 2 steps for every 3 player steps (Faster!)
       const pathForTRex = findPath(maze, tRexPosition, { r: nr, c: nc }, rows, cols);
       if (pathForTRex.length > 1) {
         const nextTRexPos = pathForTRex[1];
