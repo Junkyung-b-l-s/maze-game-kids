@@ -18,22 +18,22 @@ const DIFFICULTY_MAP = {
 };
 
 const CHARACTERS: Record<Character, { name: string, img: string, mazeColor: string, wallColor: string }> = {
-  naeun: { name: '나은', img: '/naeun.jpeg', mazeColor: '#f3f0ff', wallColor: '#845ef7' },
-  doha: { name: '도하', img: '/doha.jpeg', mazeColor: '#ebfbee', wallColor: '#40c057' },
-  mom: { name: '엄마', img: '/mom.jpeg', mazeColor: '#fff5f5', wallColor: '#fa5252' },
-  dad: { name: '아빠', img: '/dad.jpeg', mazeColor: '#fff9db', wallColor: '#fab005' },
+  naeun: { name: '나은', img: 'naeun.jpeg', mazeColor: '#f3f0ff', wallColor: '#845ef7' },
+  doha: { name: '도하', img: 'doha.jpeg', mazeColor: '#ebfbee', wallColor: '#40c057' },
+  mom: { name: '엄마', img: 'mom.jpeg', mazeColor: '#fff5f5', wallColor: '#fa5252' },
+  dad: { name: '아빠', img: 'dad.jpeg', mazeColor: '#fff9db', wallColor: '#fab005' },
 };
 
 const TARGETS: Record<Target, { name: string, img: string }> = {
-  chorong: { name: '초롱핑', img: '/chorong.webp' },
-  unicorn: { name: '유니콘', img: '/unicorn.png' },
-  prince: { name: '왕자님', img: '/prince.webp' },
-  mermaid: { name: '인어공주', img: '/ariel.jpg' },
-  elsa: { name: '엘사', img: '/Elsa.webp' },
-  bitnaping: { name: '빛나핑', img: '/bitnaping.jpeg' },
-  bebephin: { name: '베베핀', img: '/bebephin.webp' },
-  peppa: { name: '페파', img: '/peppa.jpg' },
-  george: { name: '조지', img: '/george.webp' },
+  chorong: { name: '초롱핑', img: 'chorong.webp' },
+  unicorn: { name: '유니콘', img: 'unicorn.png' },
+  prince: { name: '왕자님', img: 'prince.webp' },
+  mermaid: { name: '인어공주', img: 'ariel.jpg' },
+  elsa: { name: '엘사', img: 'Elsa.webp' },
+  bitnaping: { name: '빛나핑', img: 'bitnaping.jpeg' },
+  bebephin: { name: '베베핀', img: 'bebephin.webp' },
+  peppa: { name: '페파', img: 'peppa.jpg' },
+  george: { name: '조지', img: 'george.webp' },
 };
 
 const QUIZZES = [
